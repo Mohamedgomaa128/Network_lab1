@@ -27,7 +27,6 @@ void get(string filePath, string hostName, int port){
 		exit(-100);
 	}
 
-	// TO BE MODIFIED
 	stringstream ss;
 	//ss << "message";
 
@@ -38,17 +37,23 @@ void get(string filePath, string hostName, int port){
 	string theMessage = ss.str();
 	int ret = send(sockfd, theMessage.c_str(), theMessage.length(), 0);
 	int readd = 100;
+	string mainString;
 
 	while (readd != 0){
-
+		// reading the file from the server and writing it into new file with the same extension
 		readd = read(sockfd, buffer, 100);
 		cout << readd << endl;
+		// appending to main string which will be cleaned form unwanted data and written to the file
+		//mainString << buffer;
+		cout << "mainSting now : " << mainString << endl;
 
 		if (readd != 100){
 			cout << "error in reading" << endl;
 			exit(-100);
 		}
 	}
+
+
 	//write to the file chunk by chunk >> may loop
 	close(connection);
 }
@@ -60,47 +65,40 @@ void post(string filePath, string hostName, int port){ // will already passed
 // upload file
 	serverAddress.sin_family = AF_INET;
 	serverAddress.sin_port = htons(port);
+	// first open connection
 	int connection = inet_pton(AF_INET, hostName.c_str(), &serverAddress.sin_addr);
 
+	char stt[100] ;
+	inet_ntop(AF_INET, &serverAddress.sin_addr, stt, hostName.length());
+	cout <<  stt.()<< endl;
+	cout << serverAddress.sin_port << endl;
+	cout << serverAddress.sin_family << endl;
 	if (connection < 0){
 		cout << "connection failed" << endl;
 		exit(-100);
 	}
 
-	ifstream myfile(filePath);
-	string s;
-
-	if (myfile.is_open()){
-		myfile >> s;
-		cout << s;
-	}
-
+	// reading needed file
 	ifstream fileToBeSent(filePath, ios::binary);
 	ostringstream oss;
-	oss << "POST " << filePath << " HTTP/1.1"
-				<< "\r\n\r\n";
+	oss << "POST " << filePath << " HTTP/1.1" << "\r\n";
+
 	cout << oss.str();
 
 	oss << fileToBeSent.rdbuf();
+	oss << "\r\n\r\n";
 	cout << oss.str();
 
-	// TO BE MODIFIED
 	//stringstream ss;
 	//ss << "message";
 	string theMessage = oss.str();
+	int readed = 100;
+	readed = read(sockfd, buffer, 100);
+
 
 	int ret = send(sockfd, theMessage.c_str(), theMessage.length(), 0);
-	int readed = 100;
 
-	while (readed != 0){
-		readed = read(sockfd, buffer, 100);
-		cout << readed << endl;
 
-		if (readed != 100){
-			cout << "error in reading" << endl;
-			exit(-100);
-		}
-	}
 	//write to the file chunk by chunk >> may loop
 
 	close(connection);
@@ -134,7 +132,7 @@ int main(int argc, char * argv[]) {
 
 
 
-
+/*
 
 	string line;
 
@@ -163,14 +161,15 @@ int main(int argc, char * argv[]) {
 				 temp += ch;
 			 else {
 				 command[i++] = temp;
-				 //cout << temp << endl;
+				 cout << temp << endl;
 				 temp = "";
 			 }
 		 }
 		 if (temp != ""){
 			 command[i] = temp;
-			 //cout << temp << endl;
+			 cout << temp << endl;
 		 }
+
 
 
 		 const char * name = command[2].c_str();
@@ -184,8 +183,8 @@ int main(int argc, char * argv[]) {
 	}
 
 	commandFile.close();
-
-	//post("jksdflfjs/fskjl", "jslfkjsl.cjlkdjfsl.kljfsdl", 9);
+*/
+	post("jksdflfjs/fskjl", "jslfkjsl.cjlkdjfsl.kljfsdl", 9);
 	return 0;
 }
 
