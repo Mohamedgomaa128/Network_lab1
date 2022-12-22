@@ -21,6 +21,10 @@ void * msgHandler(void * clientArg);
 vector<string> splitMsg(string str);
 bool checkFileExist(const string& fileName);
 
+void writeFile(string filePath, string data);
+string getlastNameOfTheFile(string filePath);
+string readFile(string filePath);
+
 int main(int argc, char const* argv[]){
 
     int server_fd ,new_socket, valread;
@@ -92,38 +96,46 @@ void * msgHandler(void * clientArg){
         cout << buffer << endl ;
         cout << flush ;
 
-        buffer[strlen(buffer) - 1] = '\0';
+        //buffer[strlen(buffer) - 1] = '\0';
         fullMsg += buffer ;
     }
 
     vector<string> splits = splitMsg(fullMsg);
-    if (splits[0] == "get"){
+    if (splits[0] == "GET"){
         string fileName = splits[1];
         if (checkFileExist(fileName)) {
-            char *OK_RESPOND = "HTTP/1.1 200 OK GET\\r\\n \n";
+            cout << "\n we recived a get request" << endl ;
+            cout << flush ;
+            string s =  "HTTP/1.1 200 OK GET\\r\\n \n";
+            char *OK_RESPOND = &s[0];
             send(newSocket, OK_RESPOND, strlen(OK_RESPOND), 0);
-            
-            //send data of that file 
-            // char * data ; 
-            // send(newSocket, data, strlen(data), 0);
+
+            //send file data
+            string data = readFile(fileName);
+            char * fileData = &data[0] ;
+            send(newSocket, fileData, strlen(fileData), 0);
         }
         else{
-            char *notfound = "HTTP/1.1 404 NOT FOUND\\r\\n \n";
+            cout << "\n we recived a get request to not founded file" << endl ;
+            cout << flush ;
+            string s =  "HTTP/1.1 404 NOT FOUND\\r\\n \n";
+            char *notfound = &s[0];
             send(newSocket, notfound, strlen(notfound), 0);
         }
     }
-    else if(splits[0] == "post"){
-        string fileName = splits[1];
-        if (checkFileExist(fileName)) {
-            char *OK_RESPOND = "HTTP/1.1 200 OK POST\\r\\n \n";
-            send(newSocket, OK_RESPOND, strlen(OK_RESPOND), 0);
-        }
-        else{
-            char *notfound = "HTTP/1.1 200 NOT FOUND\\r\\n \n";
-            send(newSocket, notfound, strlen(notfound), 0);
-        }
+
+    else if(splits[0] == "POST"){
+        cout << "\n we recived a post request" << endl ;
+        cout << flush ;
+        string fileName = splits[1] , data = splits[2];
+        string s =  "HTTP/1.1 200 OK POST\\r\\n \n";
+        char *OK_RESPOND = &s[0];
+        send(newSocket, OK_RESPOND, strlen(OK_RESPOND), 0);
+
+        // create that file
+        writeFile(fileName,data);
     }
-    else if(splits[0] == "close"){
+    else if(splits[0] == "CLOSE"){
         return NULL ;
     }
 
@@ -138,7 +150,7 @@ vector<string> splitMsg(string str){
         if (c != ' ') {
             token += c;
         }
-        //if we found space but the previous char was also space then continue
+            //if we found space but the previous char was also space then continue
         else if (c == ' ' && !token.empty()){
             splits.push_back(token);
             token.clear();
@@ -154,4 +166,34 @@ bool checkFileExist(const string& fileName){
         return true;
     else
         return false;
+}
+
+string readFile(string filePath) {
+    ifstream fileToBeSent(filePath, ios::binary);
+    ostringstream oss;
+
+    oss << fileToBeSent.rdbuf();
+    //cout << "string read from the file :: " + oss.str();
+
+    return oss.str();
+}
+
+string getlastNameOfTheFile(string filePath){
+    // gets name with extension
+    string toRet = "";
+    for (int i = filePath.length() - 1; i >= 0; i--){
+        if (filePath[i] == '/')
+            break;
+        else
+            toRet = filePath[i]+ toRet;
+
+    }
+    cout << toRet<<endl;
+    return toRet;
+}
+
+void writeFile(string filePath, string data){
+    ofstream file(getlastNameOfTheFile(filePath));
+    file << data;
+    file.close();
 }
