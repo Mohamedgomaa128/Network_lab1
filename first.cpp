@@ -81,7 +81,7 @@ void post(string filePath, string hostName, int port){ // will already passed
 	// reading needed file
 	ifstream fileToBeSent(filePath, ios::binary);
 	ostringstream oss;
-	oss << "POST " << filePath << " HTTP/1.1" << "\r\n";
+	oss << "POST " << filePath;//<< " HTTP/1.1" << "\r\n";
 
 	cout << oss.str();
 
@@ -104,6 +104,8 @@ void post(string filePath, string hostName, int port){ // will already passed
 	close(connection);
 }
 
+
+
 void* server(void * in) {
 	int server_fd = socket(AF_INET, SOCK_STREAM, 0);
 
@@ -124,7 +126,8 @@ void* server(void * in) {
 
 		int bindRet = bind(server_fd, (struct sockaddr*)&clientAddress, sizeof(clientAddress));
 		if (bindRet < 0){
-			perror("bind failed");
+			//perror("bind failed");
+			cout << "bind failed";
 			exit(EXIT_FAILURE);
 		}
 
@@ -174,7 +177,7 @@ void* client(void * in) {
 	int client_fd = connect(sockfd, (struct sockaddr*)&serverAddress, sizeof(serverAddress));
 	if (client_fd < 0)
 	{
-		perror("connection failed");
+		perror("client:: connection failed");
 		exit(1);
 	}
 
@@ -191,15 +194,45 @@ void* client(void * in) {
 	return NULL;
 }
 
+string readFile(string filePath) {
+	ifstream fileToBeSent(filePath, ios::binary);
+	ostringstream oss;
+
+	oss << fileToBeSent.rdbuf();
+	//cout << "string read from the file :: " + oss.str();
+
+	return oss.str();
+}
+
+string getlastNameOfTheFile(string filePath){
+	// gets name with extension
+	string toRet = "";
+	for (int i = filePath.length() - 1; i >= 0; i--){
+		if (filePath[i] == '/')
+			break;
+		else
+			toRet = filePath[i]+ toRet;
+
+	}
+	cout << toRet<<endl;
+	return toRet;
+}
+
+void writeFile(string filePath, string data){
+	ofstream file(getlastNameOfTheFile(filePath));
+	file << data;
+	file.close();
+
+}
 int main(int argc, char * argv[]) {
 
 
 // argc by default = 1
-	/*sockfd = socket(AF_INET, SOCK_STREAM, 0);
+	sockfd = socket(AF_INET, SOCK_STREAM, 0);
 	if (sockfd < 0){
 		cout << "error in creating socket" << endl;
 		exit(-100);
-	}*/
+	}
 	/*serverAddress.sin_family = AF_INET;
 	serverAddress.sin_port = hton(PORT_ORG);
 	int ret = inet_pton(AF_INET, "127.0.0.1", &serverAddress.sin_addr);
@@ -218,9 +251,9 @@ int main(int argc, char * argv[]) {
 
 
 
-/*
 
-	string line;
+
+/*	string line;
 
 	ifstream commandFile;
 	string command[argc - 1];
@@ -270,17 +303,13 @@ int main(int argc, char * argv[]) {
 
 	commandFile.close();
 
-//	post("jksdflfjs/fskjl", "jslfkjsl.cjlkdjfsl.kljfsdl", 9);
+	post("jksdflfjs/fskjl", "jslfkjsl.cjlkdjfsl.kljfsdl", 9);*/
+
+
+//	cout << readFile("/home/ubuntu/Desktop/download.jpeg");
+	//cout << getlastNameOfTheFile("/home/ubuntu/Desktop/download.jpeg");
+	writeFile("/home/ubuntu/Desktop/download.jpeg",readFile("/home/ubuntu/Desktop/download.jpeg"));
 	return 0;
-
-	*/
-	pthread_t threads[2];
-
-	int rs = pthread_create(&threads[0], NULL, server, NULL);
-	int rc = pthread_create(&threads[1], NULL, client, NULL);
-	int e1 = pthread_join(threads[0], NULL);
-	int e2 = pthread_join(threads[1], NULL);
-	cout << e1 << endl << e2 << endl;
 }
 
 
