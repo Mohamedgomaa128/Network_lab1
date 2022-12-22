@@ -6,7 +6,7 @@
 #include <unistd.h>
 #include <fstream>
 #include <netdb.h>
-
+#include <pthread.h>
 using namespace std;
 #define PORT_ORG 80
 struct sockaddr_in serverAddress;
@@ -70,7 +70,7 @@ void post(string filePath, string hostName, int port){ // will already passed
 
 	char stt[100] ;
 	inet_ntop(AF_INET, &serverAddress.sin_addr, stt, hostName.length());
-	cout <<  stt.()<< endl;
+	//cout <<  stt.()<< endl;
 	cout << serverAddress.sin_port << endl;
 	cout << serverAddress.sin_family << endl;
 	if (connection < 0){
@@ -104,17 +104,103 @@ void post(string filePath, string hostName, int port){ // will already passed
 	close(connection);
 }
 
+void* server(void * in) {
+	int server_fd = socket(AF_INET, SOCK_STREAM, 0);
 
-int main(int argc, char * argv[]) {
+		if (server_fd < 0){
+			perror("socket failed");
+			exit(EXIT_FAILURE);
+		}
 
+		int opt;
+		if(setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))){
+			perror("setsockopt");
+			exit(EXIT_FAILURE);
+		}
+		struct sockaddr_in clientAddress;
+		clientAddress.sin_family = AF_INET;
+		clientAddress.sin_port = htons(PORT_ORG);
+		clientAddress.sin_addr.s_addr = INADDR_ANY;
 
-// argc by default = 1
+		int bindRet = bind(server_fd, (struct sockaddr*)&clientAddress, sizeof(clientAddress));
+		if (bindRet < 0){
+			perror("bind failed");
+			exit(EXIT_FAILURE);
+		}
+
+		if (listen(server_fd, 3) < 0){
+			perror("listen");
+			exit(EXIT_FAILURE);
+		}
+
+		int new_socket = accept(server_fd, (struct sockaddr*) &clientAddress,
+				(socklen_t*)(sizeof(clientAddress)));
+		if (new_socket < 0) {
+			perror("accept");
+			exit(EXIT_FAILURE);
+		}
+
+		char buffer[1024];
+		int valread = read(new_socket, buffer, 1024);
+		printf("%s\n", buffer);
+		send(new_socket, "okay", 4, 0);
+		std::cout << "hello message sent\n";
+		close(new_socket);
+		shutdown(server_fd, SHUT_RDWR);
+		return NULL;
+}
+
+void* client(void * in) {
 	sockfd = socket(AF_INET, SOCK_STREAM, 0);
 	if (sockfd < 0){
 		cout << "error in creating socket" << endl;
 		exit(-100);
 	}
-/*	serverAddress.sin_family = AF_INET;
+
+	serverAddress.sin_family = AF_INET;
+	serverAddress.sin_port = htons(80);
+	int connection = inet_pton(AF_INET, "127.0.0.1", &serverAddress.sin_addr);
+
+	if (connection < 0){
+		cout << "connection failed" << endl;
+		exit(-100);
+	}
+
+	stringstream ss;
+	//ss << "message";
+
+	ss << "FROM CLIENT";
+	//cout << ss.str();
+	int client_fd = connect(sockfd, (struct sockaddr*)&serverAddress, sizeof(serverAddress));
+	if (client_fd < 0)
+	{
+		perror("connection failed");
+		exit(1);
+	}
+
+	string theMessage = ss.str();
+	int ret = send(sockfd, theMessage.c_str(), theMessage.length(), 0);
+	std::cout << "message sent form client";
+	char buffer[1024];
+	int valread = read(sockfd, buffer, 1024);
+	printf("%s\n", buffer);
+
+	//write to the file chunk by chunk >> may loop
+	close(connection);
+
+	return NULL;
+}
+
+int main(int argc, char * argv[]) {
+
+
+// argc by default = 1
+	/*sockfd = socket(AF_INET, SOCK_STREAM, 0);
+	if (sockfd < 0){
+		cout << "error in creating socket" << endl;
+		exit(-100);
+	}*/
+	/*serverAddress.sin_family = AF_INET;
 	serverAddress.sin_port = hton(PORT_ORG);
 	int ret = inet_pton(AF_INET, "127.0.0.1", &serverAddress.sin_addr);
 	if (ret < 0){
@@ -183,10 +269,22 @@ int main(int argc, char * argv[]) {
 	}
 
 	commandFile.close();
-*/
-	post("jksdflfjs/fskjl", "jslfkjsl.cjlkdjfsl.kljfsdl", 9);
+
+//	post("jksdflfjs/fskjl", "jslfkjsl.cjlkdjfsl.kljfsdl", 9);
 	return 0;
+
+	*/
+	pthread_t threads[2];
+
+	int rs = pthread_create(&threads[0], NULL, server, NULL);
+	int rc = pthread_create(&threads[1], NULL, client, NULL);
+	int e1 = pthread_join(threads[0], NULL);
+	int e2 = pthread_join(threads[1], NULL);
+	cout << e1 << endl << e2 << endl;
 }
+
+
+
 
 
 
