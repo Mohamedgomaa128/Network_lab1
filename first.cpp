@@ -13,7 +13,38 @@ struct sockaddr_in serverAddress;
 int sockfd;
 
 
-char buffer[100];
+char buffer[1024];
+
+
+string readFile(string filePath) {
+	ifstream fileToBeSent(filePath, ios::binary);
+	ostringstream oss;
+
+	oss << fileToBeSent.rdbuf();
+	//cout << "string read from the file :: " + oss.str();
+
+	return oss.str();
+}
+
+string getlastNameOfTheFile(string filePath){
+	// gets name with extension
+	string toRet = "";
+	for (int i = filePath.length() - 1; i >= 0; i--){
+		if (filePath[i] == '/')
+			break;
+		else
+			toRet = filePath[i]+ toRet;
+
+	}
+	cout << toRet<<endl;
+	return toRet;
+}
+
+void writeFile(string filePath, string data){
+	ofstream file(getlastNameOfTheFile(filePath));
+	file << data;
+	file.close();
+}
 // file path on server struct sockaddr_in serverAddress;
 void get(string filePath, string hostName, int port){
 	//reading from the file
@@ -30,10 +61,11 @@ void get(string filePath, string hostName, int port){
 	stringstream ss;
 	//ss << "message";
 
-	ss << "GET " << filePath << " HTTP/1.1"
-			<< "\r\n\r\n";
+	//ss << "GET " << filePath << " HTTP/1.1"
+		//	<< "\r\n\r\n";
 	//cout << ss.str();
 
+	ss << "GET" << filePath;
 	string theMessage = ss.str();
 	int ret = send(sockfd, theMessage.c_str(), theMessage.length(), 0);
 	int readd = 100;
@@ -41,10 +73,10 @@ void get(string filePath, string hostName, int port){
 
 	while (readd != 0){
 		// reading the file from the server and writing it into new file with the same extension
-		readd = read(sockfd, buffer, 100);
+		readd = read(sockfd, buffer, 1024);
 		cout << readd << endl;
 		// appending to main string which will be cleaned form unwanted data and written to the file
-		//mainString << buffer;
+		mainString += buffer;
 		cout << "mainSting now : " << mainString << endl;
 
 		if (readd != 100){
@@ -52,7 +84,7 @@ void get(string filePath, string hostName, int port){
 			exit(-100);
 		}
 	}
-
+	writeFile(filePath, mainString);
 
 	//write to the file chunk by chunk >> may loop
 	close(connection);
@@ -70,35 +102,31 @@ void post(string filePath, string hostName, int port){ // will already passed
 
 	char stt[100] ;
 	inet_ntop(AF_INET, &serverAddress.sin_addr, stt, hostName.length());
-	//cout <<  stt.()<< endl;
-	cout << serverAddress.sin_port << endl;
-	cout << serverAddress.sin_family << endl;
+
 	if (connection < 0){
 		cout << "connection failed" << endl;
 		exit(-100);
 	}
 
 	// reading needed file
-	ifstream fileToBeSent(filePath, ios::binary);
 	ostringstream oss;
-	oss << "POST " << filePath;//<< " HTTP/1.1" << "\r\n";
+	oss << "POST " << filePath << " ";//<< " HTTP/1.1" << "\r\n";
 
-	cout << oss.str();
+	//cout << oss.str();
 
-	oss << fileToBeSent.rdbuf();
-	oss << "\r\n\r\n";
+	oss << readFile(filePath);
+	//oss << "\r\n\r\n";
 	cout << oss.str();
 
 	//stringstream ss;
 	//ss << "message";
 	string theMessage = oss.str();
-	int readed = 100;
-	readed = read(sockfd, buffer, 100);
+	//int readed = read(sockfd, buffer, 100);
 
 
 	int ret = send(sockfd, theMessage.c_str(), theMessage.length(), 0);
 
-
+	cout << ret;
 	//write to the file chunk by chunk >> may loop
 
 	close(connection);
@@ -194,36 +222,6 @@ void* client(void * in) {
 	return NULL;
 }
 
-string readFile(string filePath) {
-	ifstream fileToBeSent(filePath, ios::binary);
-	ostringstream oss;
-
-	oss << fileToBeSent.rdbuf();
-	//cout << "string read from the file :: " + oss.str();
-
-	return oss.str();
-}
-
-string getlastNameOfTheFile(string filePath){
-	// gets name with extension
-	string toRet = "";
-	for (int i = filePath.length() - 1; i >= 0; i--){
-		if (filePath[i] == '/')
-			break;
-		else
-			toRet = filePath[i]+ toRet;
-
-	}
-	cout << toRet<<endl;
-	return toRet;
-}
-
-void writeFile(string filePath, string data){
-	ofstream file(getlastNameOfTheFile(filePath));
-	file << data;
-	file.close();
-
-}
 int main(int argc, char * argv[]) {
 
 
